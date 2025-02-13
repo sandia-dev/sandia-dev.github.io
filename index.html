@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>San valentin</title>
+        <link rel="stylesheet" type="text/css" href="1/style.css">
+    </head>
+    <body>
+        <div style="text-align: center;">
+            <img src="1/bear1.gif" alt="Corazón" style="width: 300px; height: 250px; margin-top: 50px;">
+        </div>
+        <h1 style="color: rgb(255, 127, 146);">¿Quieres ser mi San Valentín?</h1>
+        
+        <div style="display: flex; justify-content: center; align-items: center; margin-top: 50px;">
+            <!-- Div independiente para el botón "Sí" -->
+            <div style="display: flex; justify-content: center; align-items: center; min-width: 120px;">
+                <button id="yesButton" style="background-color: rgb(49, 162, 49); width: 100px; height: 60px; font-size: 16px;">Sí</button>
+            </div>
+
+            <!-- Espacio entre los botones -->
+            <div style="width: 50px;"></div>
+
+            <!-- Div independiente para el botón "No" -->
+            <div style="display: flex; justify-content: center; align-items: center; min-width: 120px;">
+                <button id="noButton" style="background-color: rgb(255, 104, 104); padding: 10px 15px; height: 60px; font-size: 16px;">No</button>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const noButton = document.getElementById('noButton');
+                const yesButton = document.getElementById('yesButton');
+                const messages = ["Porfi", "porfaplis", "Te daré mil besitos :c", "sigue dándole al botón", "Llegará un momento en que tendrás que darle a sí", "Okei", "Solo di que si", "Porfis", "Ya me cansé de poner mensajes en este botón >:c", "Ahora se van a repetir"];
+                let messageIndex = 0;
+
+                noButton.addEventListener('click', function() {
+                    // Obtener tamaño actual del botón "Sí"
+                    let currentWidth = yesButton.offsetWidth;
+                    let currentHeight = yesButton.offsetHeight;
+                    let currentFontSize = parseInt(window.getComputedStyle(yesButton).fontSize);
+
+                    // Aumentar tamaño del botón "Sí" en todas direcciones
+                    yesButton.style.width = (currentWidth * 1.5) + 'px';
+                    yesButton.style.height = (currentHeight * 1.5) + 'px';
+                    yesButton.style.fontSize = (currentFontSize * 1.5) + 'px';
+
+                    // Cambiar el texto del botón "No"
+                    noButton.textContent = messages[messageIndex];
+                    messageIndex = (messageIndex + 1) % messages.length;
+
+                    // Ajustar automáticamente el tamaño del botón "No" sin que crezca junto con "Sí"
+                    noButton.style.width = "auto";  
+                    noButton.style.height = "auto"; 
+                });
+                yesButton.addEventListener('click', function() {
+                    window.location.href = "2/index.html";
+                });
+
+            });
+        </script>
+    </body>
+</html>
