@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprende Japonés - Ejercicios</title>
+    <!-- Tailwind CSS para estilos rápidos y limpios -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts para una tipografía limpia y soporte japonés -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                        jp: ['Noto Sans JP', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: '#121212',
+                        darker: '#0a0a0a',
+                        card: '#1e1e1e',
+                        primary: '#6366f1', // Indigo
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #f3f4f6;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Estilos para Furigana */
+        ruby {
+            ruby-align: center;
+        }
+        rt {
+            font-size: 0.6rem;
+            color: #9ca3af; /* gray-400 */
+            user-select: none;
+        }
+
+        /* Animaciones suaves */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Estilos de tarjetas */
+        .card-draggable {
+            touch-action: none; /* Previene scroll al arrastrar en movil si se usa drag nativo */
+            transition: all 0.2s;
+        }
+        .card-draggable:active { transform: scale(0.95); }
+        .card-draggable.selected {
+            box-shadow: 0 0 0 2px #6366f1;
+            transform: translateY(-2px);
+        }
+        .card-draggable.dragging {
+            opacity: 0.5;
+        }
+
+        .drop-zone {
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over {
+            background-color: #374151; /* gray-700 */
+            border-color: #6366f1;
+        }
+
+        /* Inputs para el modo escritura */
+        .jp-input {
+            font-family: 'Noto Sans JP', 'Nunito', sans-serif;
+            text-align: center;
+            font-size: 1.25rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+    <!-- Header / Nav -->
+    <header class="bg-darker border-b border-gray-800 p-4 sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <h1 class="text-xl font-bold flex items-center gap-2 cursor-pointer" onclick="app.showView('menu')">
+                <span class="text-primary text-2xl">🇯🇵</span> NihongoApp
+            </h1>
+            <div id="header-actions" class="hidden flex items-center gap-2">
+                <button onclick="app.showView('menu')" class="text-sm bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors">
+                    Ir al Menú
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal -->
+    <main class="flex-grow w-full max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col relative">
+
+        <!-- VISTA 1: Menú Principal -->
+        <section id="view-menu" class="fade-in w-full">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-200">Elige un ejercicio</h2>
+                    <p class="text-sm text-gray-400">Completa desafíos en dirección Normal 🇪🇸➔🇯🇵 e Invertida 🇯🇵➔🇪🇸 para ganar estrellas.</p>
+                </div>
+                <button onclick="app.clearProgress()" class="text-xs bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-900/50 px-3 py-1.5 rounded-lg transition-colors self-start sm:self-auto">
+                    Restablecer Progreso
+                </button>
+            </div>
+            <div id="exercises-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <!-- Se inyecta por JS -->
+            </div>
+        </section>
+
+        <!-- VISTA 2: Ventana de Teoría -->
+        <section id="view-theory" class="fade-in w-full hidden">
+            <button onclick="app.showView('menu')" class="mb-6 text-gray-400 hover:text-white flex items-center gap-1 text-sm transition-colors">
+                ← Volver al Menú
+            </button>
+            <div class="bg-card rounded-2xl p-6 border border-gray-800 shadow-xl max-w-2xl mx-auto">
+                <div class="text-center mb-6">
+                    <span id="theory-icon" class="text-5xl mb-2 block">📅</span>
+                    <h2 id="theory-title" class="text-3xl font-bold text-gray-100">...</h2>
+                    <p id="theory-desc" class="text-gray-400 text-sm mt-1">Repasa el vocabulario y sus conceptos antes de practicar.</p>
+                </div>
+
+                <!-- Bloque de Explicaciones Detalladas (Se inyecta dinámicamente si el ejercicio tiene teoría explicativa) -->
+                <div id="theory-explanations" class="mb-6 space-y-4 hidden">
+                    <!-- Tarjetas de explicación una a una inyectadas por JS -->
+                </div>
+
+                <!-- Tabla de estudio (Resumen) -->
+                <div class="overflow-x-auto mb-6 rounded-xl border border-gray-800 bg-darker">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <!-- Las cabeceras se adaptan dinámicamente por JS -->
+                        </thead>
+                        <tbody id="theory-table-body" class="divide-y divide-gray-800 text-gray-200 text-sm">
+                            <!-- Filas inyectadas por JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Notas Adicionales -->
+                <div id="theory-notes-box" class="bg-darker/50 border border-gray-800 rounded-xl p-4 mb-6 text-sm text-gray-300 leading-relaxed">
+                    <!-- Notas inyectadas por JS -->
+                </div>
+
+                <!-- Botón de Comenzar -->
+                <div class="flex justify-center">
+                    <button id="btn-start-practice" class="bg-primary hover:bg-indigo-500 text-white font-bold py-3.5 px-10 rounded-xl shadow-lg transition transform hover:scale-105 w-full sm:w-auto flex items-center justify-center gap-2">
+                        ¡Comenzar Práctica! 🚀
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA 3: El Ejercicio (Drag & Drop / Writing) -->
+        <section id="view-exercise" class="fade-in w-full hidden flex-col flex-grow">
+            <!-- Botón de vuelta rápida a la teoría -->
+            <button onclick="app.showView('theory', app.state.exerciseId)" class="mb-4 text-gray-400 hover:text-white flex items-center gap-1 text-xs transition-colors self-start">
+                ← Repasar Teoría
+            </button>
+
+            <!-- Encabezado con información del ejercicio y selectores -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-gray-800 pb-5">
+                <div>
+                    <h2 id="ex-title" class="text-2xl font-bold text-gray-100">...</h2>
+                    <div class="flex items-center gap-2 mt-1">
+                        <p id="ex-subtitle" class="text-sm text-gray-400">Practica ordenando las tarjetas correspondientes.</p>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <!-- Dirección del Ejercicio (Modo Invertido) -->
+                    <div class="flex bg-darker p-1 rounded-xl border border-gray-800">
+                        <button id="btn-mode-normal" onclick="app.toggleInverted(false)" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap">
+                            🇪🇸 ➔ 🇯🇵 Normal
+                        </button>
+                        <button id="btn-mode-inverted" onclick="app.toggleInverted(true)" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap">
+                            🇯🇵 ➔ 🇪🇸 Invertido
+                        </button>
+                    </div>
+                    <!-- Pestañas de Dificultad Dinámicas -->
+                    <div class="flex bg-darker p-1 rounded-xl border border-gray-800 overflow-x-auto max-w-full" id="difficulty-tabs-container">
+                        <!-- Los botones de dificultad se inyectan aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Área de Huecos (Destinos) -->
+            <div class="bg-card rounded-2xl p-4 sm:p-6 border border-gray-800 shadow-lg mb-6 flex-grow">
+                <div id="slots-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    <!-- Los huecos se inyectan aquí (se adapta automáticamente a 10 elementos) -->
+                </div>
+            </div>
+
+            <!-- Área de Tarjetas (Origen) -->
+            <div id="cards-container-wrapper" class="bg-darker rounded-2xl p-4 sm:p-6 border border-gray-800 border-dashed">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Tarjetas disponibles (Toca o arrastra)</p>
+                    <button onclick="app.resetExercise()" class="text-xs text-gray-400 hover:text-white flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Reiniciar
+                    </button>
+                </div>
+                <div id="cards-container" class="flex flex-wrap justify-center gap-3 min-h-[4rem]">
+                    <!-- Las tarjetas se inyectan aquí -->
+                </div>
+            </div>
+
+            <!-- Botón de comprobación -->
+            <div class="mt-6 flex justify-center">
+                <button id="btn-check" onclick="app.checkAnswers()" class="bg-primary hover:bg-indigo-500 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg transition transform hover:scale-105 w-full sm:w-auto">
+                    Comprobar respuestas
+                </button>
+            </div>
+            
+            <!-- Mensaje de Feedback -->
+            <div id="feedback-message" class="hidden mt-4 p-4 rounded-xl text-center font-bold text-lg">
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        /**
+         * BASE DE DATOS DE EJERCICIOS
+         * Cada ejercicio define qué niveles de dificultad tiene permitidos.
+         */
+        const EXERCISES_DATA = [
+            {
+                id: 'days',
+                title: 'Días de la semana',
+                icon: '📅',
+                desc: 'Aprende de Lunes a Domingo.',
+                allowedDifficulties: ['easy', 'medium', 'hard', 'writing'],
+                theoryNotes: "Los días de la semana en japonés terminan todos en <strong>曜日 (ようび - yōbi)</strong>, que significa 'día de la semana'. Cada uno está dedicado a un elemento tradicional de la naturaleza oriental: Luna (lunes), Fuego (martes), Agua (miércoles), Madera/Árbol (jueves), Metal/Oro (viernes), Tierra (sábado) y Sol (domingo).",
+                items: [
+                    { es: 'Lunes', kanji: '月曜日', furigana: 'げつようび', emoji: '🌙', color: 'border-blue-500', bg: 'bg-blue-900/20' },
+                    { es: 'Martes', kanji: '火曜日', furigana: 'かようび', emoji: '🔥', color: 'border-red-500', bg: 'bg-red-900/20' },
+                    { es: 'Miércoles', kanji: '水曜日', furigana: 'すいようび', emoji: '💧', color: 'border-cyan-500', bg: 'bg-cyan-900/20' },
+                    { es: 'Jueves', kanji: '木曜日', furigana: 'もくようび', emoji: '🌳', color: 'border-green-500', bg: 'bg-green-900/20' },
+                    { es: 'Viernes', kanji: '金曜日', furigana: 'きんようび', emoji: '💰', color: 'border-yellow-500', bg: 'bg-yellow-900/20' },
+                    { es: 'Sábado', kanji: '土曜日', furigana: 'どようび', emoji: '⛰️', color: 'border-amber-600', bg: 'bg-amber-900/20' },
+                    { es: 'Domingo', kanji: '日曜日', furigana: 'にちようび', emoji: '☀️', color: 'border-orange-500', bg: 'bg-orange-900/20' }
+                ]
+            },
+            {
+                id: 'directions',
+                title: 'Direcciones',
+                icon: '🧭',
+                desc: 'Aprende arriba, abajo, izquierda, derecha...',
+                allowedDifficulties: ['easy', 'medium', 'hard', 'writing'],
+                theoryNotes: "Las posiciones espaciales básicas utilizan Kanjis de trazos sencillos y muy comunes en Japón. Presta especial atención a las parejas opuestas: arriba/abajo (<strong>上 / 下</strong>) e izquierda/derecha (<strong>左 / 右</strong>) para memorizarlas más rápido.",
+                items: [
+                    { es: 'Izquierda', kanji: '左', furigana: 'ひだり', emoji: '⬅️', color: 'border-blue-500', bg: 'bg-blue-900/20' },
+                    { es: 'Derecha', kanji: '右', furigana: 'みぎ', emoji: '➡️', color: 'border-red-500', bg: 'bg-red-900/20' },
+                    { es: 'Arriba', kanji: '上', furigana: 'うえ', emoji: '⬆️', color: 'border-green-500', bg: 'bg-green-900/20' },
+                    { es: 'Abajo', kanji: '下', furigana: 'した', emoji: '⬇️', color: 'border-yellow-500', bg: 'bg-yellow-900/20' },
+                    { es: 'Delante', kanji: '前', furigana: 'まえ', emoji: '🚶‍➡️📍', color: 'border-cyan-500', bg: 'bg-cyan-900/20' },
+                    { es: 'Detrás', kanji: '後ろ', furigana: 'うしろ', emoji: '📍🚶‍➡️', color: 'border-purple-500', bg: 'bg-purple-900/20' },
+                    { es: 'Dentro', kanji: '中', furigana: 'なか', emoji: '📥', color: 'border-orange-500', bg: 'bg-orange-900/20' },
+                    { es: 'Fuera', kanji: '外', furigana: 'そと', emoji: '📤', color: 'border-pink-500', bg: 'bg-pink-900/20' }
+                ]
+            },
+            {
+                id: 'colors',
+                title: 'Colores',
+                icon: '🎨',
+                desc: 'Colores básicos y naturales.',
+                allowedDifficulties: ['easy', 'medium', 'hard', 'writing'],
+                theoryNotes: "En japonés, los nombres de los colores pueden funcionar como sustantivos (como <strong>茶色</strong> - color té) o añadir la letra 'i' (い) al final para actuar directamente como adjetivos calificativos (por ejemplo, <strong>赤い車</strong> - coche rojo).",
+                items: [
+                    { es: 'Amarillo', kanji: '黄色', furigana: 'きいろ', emoji: '💛', color: 'border-yellow-500', bg: 'bg-yellow-500/10' },
+                    { es: 'Rojo', kanji: '赤', furigana: 'あか', emoji: '❤️', color: 'border-red-500', bg: 'bg-red-500/10' },
+                    { es: 'Azul', kanji: '青', furigana: 'あお', emoji: '💙', color: 'border-blue-500', bg: 'bg-blue-500/10' },
+                    { es: 'Verde', kanji: '緑', furigana: 'みどり', emoji: '💚', color: 'border-emerald-500', bg: 'bg-emerald-500/10' },
+                    { es: 'Negro', kanji: '黒', furigana: 'くろ', emoji: '🖤', color: 'border-neutral-400', bg: 'bg-neutral-900/80' },
+                    { es: 'Blanco', kanji: '白', furigana: 'しろ', emoji: '🤍', color: 'border-neutral-100', bg: 'bg-neutral-100/10' },
+                    { es: 'Morado', kanji: '紫', furigana: 'むらさき', emoji: '💜', color: 'border-purple-500', bg: 'bg-purple-500/10' },
+                    { es: 'Naranja', kanji: 'オレンジ', furigana: 'おれんじ', emoji: '🧡', color: 'border-orange-500', bg: 'bg-orange-500/10' },
+                    { es: 'Rosa', kanji: 'ピンク', furigana: 'ぴんく', emoji: '🩷', color: 'border-pink-400', bg: 'bg-pink-400/10' },
+                    { es: 'Marrón', kanji: '茶色', furigana: 'ちゃいろ', emoji: '🤎', color: 'border-[#8B4513]', bg: 'bg-[#8B4513]/20' },
+                    { es: 'Gris', kanji: '灰色', furigana: 'はいいろ', emoji: '🩶', color: 'border-gray-400', bg: 'bg-gray-400/20' }
+                ]
+            },
+            {
+                id: 'counters_objects',
+                title: 'Contadores de Objetos',
+                icon: '📦',
+                desc: 'Aprende la serie completa hasta 10 para objetos generales y pequeños (~つ).',
+                allowedDifficulties: ['easy', 'medium', 'hard', 'writing'],
+                theoryNotes: "El contador <strong>~つ (tsu)</strong> es la forma nativa e indispensable de contar cosas generales de cualquier tipo en Japón (cajas, manzanas, juguetes, platos). ¡Fíjate bien que al llegar al número <strong>10 (十 - とお)</strong> el sufijo 'tsu' desaparece por completo! Es la única excepción de la serie básica.",
+                items: [
+                    { es: '1 Objeto', kanji: '一つ', furigana: 'ひとつ', emoji: '📦', color: 'border-blue-500', bg: 'bg-blue-500/10' },
+                    { es: '2 Objetos', kanji: '二つ', furigana: 'ふたつ', emoji: '📦📦', color: 'border-blue-400', bg: 'bg-blue-400/10' },
+                    { es: '3 Objetos', kanji: '三つ', furigana: 'みっつ', emoji: '📦📦📦', color: 'border-cyan-500', bg: 'bg-cyan-500/10' },
+                    { es: '4 Objetos', kanji: '四つ', furigana: 'よっつ', emoji: '📦×4', color: 'border-cyan-400', bg: 'bg-cyan-400/10' },
+                    { es: '5 Objetos', kanji: '五つ', furigana: 'いつつ', emoji: '📦×5', color: 'border-teal-500', bg: 'bg-teal-500/10' },
+                    { es: '6 Objetos', kanji: '六つ', furigana: 'むっつ', emoji: '📦×6', color: 'border-teal-400', bg: 'bg-teal-400/10' },
+                    { es: '7 Objetos', kanji: '七つ', furigana: 'ななつ', emoji: '📦×7', color: 'border-emerald-500', bg: 'bg-emerald-500/10' },
+                    { es: '8 Objetos', kanji: '八つ', furigana: 'やっつ', emoji: '📦×8', color: 'border-emerald-400', bg: 'bg-emerald-400/10' },
+                    { es: '9 Objetos', kanji: '九つ', furigana: 'ここのつ', emoji: '📦×9', color: 'border-indigo-500', bg: 'bg-indigo-500/10' },
+                    { es: '10 Objetos', kanji: '十', furigana: 'とお', emoji: '📦×10', color: 'border-purple-500', bg: 'bg-purple-500/10' }
+                ]
+            },
+            {
+                id: 'counters_people',
+                title: 'Contadores de Personas',
+                icon: '👥',
+                desc: 'Aprende a contar personas del 1 al 10 (~人).',
+                allowedDifficulties: ['easy', 'medium', 'hard', 'writing'],
+                theoryNotes: "Para contar personas se usa el contador <strong>~人 (nin / ri)</strong>. Las dos primeras personas son completamente irregulares: 1 persona es <strong>一人 (ひとり - hitori)</strong> y 2 personas es <strong>二人 (ふたり - futari)</strong>. A partir de 3 personas, simplemente se añade 'nin', prestando atención al número <strong>4 (四人 - よにん - yonin)</strong>.",
+                items: [
+                    { es: '1 Persona', kanji: '一人', furigana: 'ひとり', emoji: '👤', color: 'border-rose-500', bg: 'bg-rose-500/10' },
+                    { es: '2 Personas', kanji: '二人', furigana: 'ふたり', emoji: '👥', color: 'border-pink-500', bg: 'bg-pink-500/10' },
+                    { es: '3 Personas', kanji: '三人', furigana: 'さんにん', emoji: '👥👤', color: 'border-purple-500', bg: 'bg-purple-500/10' },
+                    { es: '4 Personas', kanji: '四人', furigana: 'よにん', emoji: '👥👥', color: 'border-purple-400', bg: 'bg-purple-400/10' },
+                    { es: '5 Personas', kanji: '五人', furigana: 'ごにん', emoji: '👥👥👤', color: 'border-indigo-500', bg: 'bg-indigo-500/10' },
+                    { es: '6 Personas', kanji: '六人', furigana: 'ろくにん', emoji: '👥👥👥', color: 'border-indigo-400', bg: 'bg-indigo-400/10' },
+                    { es: '7 Personas', kanji: '七人', furigana: 'ななにん', emoji: '👥👥👥👤', color: 'border-blue-500', bg: 'bg-blue-500/10' },
+                    { es: '8 Personas', kanji: '八人', furigana: 'はちにん', emoji: '👥👥👥👥', color: 'border-blue-400', bg: 'bg-blue-400/10' },
+                    { es: '9 Personas', kanji: '九人', furigana: 'きゅうにん', emoji: '👥👥👥👥👤', color: 'border-cyan-500', bg: 'bg-cyan-500/10' },
+                    { es: '10 Personas', kanji: '十人', furigana: 'じゅうにん', emoji: '👥👥👥👥👥', color: 'border-emerald-500', bg: 'bg-emerald-500/10' }
+                ]
+            },
+            {
+                id: 'meals',
+                title: 'Comidas del Día',
+                icon: '🥞',
+                desc: 'Aprende los términos relacionados con el desayuno, comida, cena, etc.',
+                allowedDifficulties: ['easy', 'medium', 'hard', 'writing'],
+                theoryNotes: "Las comidas del día se asocian de forma muy lógica con los momentos de la jornada: mañana (朝 - asa), mediodía/tarde (昼 - hiru) y noche (晩 - ban), añadiéndoles la palabra <strong>ご飯 (ごはん - gohan)</strong>, que literalmente significa arroz cocido pero se usa para cualquier comida diaria.",
+                items: [
+                    { es: 'Desayuno', kanji: '朝ご飯', furigana: 'あさごはん', emoji: '🥞', color: 'border-yellow-400', bg: 'bg-yellow-500/10' },
+                    { es: 'Almuerzo / Comida', kanji: '昼ご飯', furigana: 'ひるごはん', emoji: '🍱', color: 'border-orange-500', bg: 'bg-orange-500/10' },
+                    { es: 'Cena', kanji: '晩ご飯', furigana: 'ばんごはん', emoji: '🍲', color: 'border-indigo-500', bg: 'bg-indigo-500/10' },
+                    { es: 'Comida / Alimento', kanji: '食べ物', furigana: 'たべもの', emoji: '🍎', color: 'border-green-500', bg: 'bg-green-500/10' },
+                    { es: 'Bebida', kanji: '飲み物', furigana: 'のみもの', emoji: '🥤', color: 'border-cyan-500', bg: 'bg-cyan-500/10' },
+                    { es: 'Merienda / Dulce', kanji: 'おやつ', furigana: 'おやつ', emoji: '🍪', color: 'border-pink-400', bg: 'bg-pink-400/10' }
+                ]
+            },
+            {
+                id: 'flavors',
+                title: 'Sabores',
+                icon: '🍋',
+                desc: 'Aprende a describir sabores: dulce, picante, ácido, amargo...',
+                allowedDifficulties: ['easy', 'medium', 'hard', 'writing'],
+                theoryNotes: "Casi todos los sabores básicos en japonés se expresan mediante adjetivos que terminan en la vocal <strong>i (い)</strong>. ¡Puedes combinarlos para calificar tus comidas!",
+                items: [
+                    { es: 'Dulce', kanji: '甘い', furigana: 'あまい', emoji: '🍬', color: 'border-pink-400', bg: 'bg-pink-500/10' },
+                    { es: 'Picante', kanji: '辛い', furigana: 'からい', emoji: '🌶️', color: 'border-red-500', bg: 'bg-red-500/10' },
+                    { es: 'Amargo', kanji: '苦い', furigana: 'にがい', emoji: '☕', color: 'border-emerald-700', bg: 'bg-emerald-700/10' },
+                    { es: 'Ácido', kanji: '酸っぱい', furigana: 'すっぱい', emoji: '🍋', color: 'border-yellow-400', bg: 'bg-yellow-500/10' },
+                    { es: 'Salado', kanji: 'しょっぱい', furigana: 'しょっぱい', emoji: '🧂', color: 'border-neutral-300', bg: 'bg-neutral-500/10' },
+                    { es: 'Delicioso', kanji: '美味しい', furigana: 'おいしい', emoji: '😋', color: 'border-amber-500', bg: 'bg-amber-500/10' }
+                ]
+            },
+            {
+                id: 'weather',
+                title: 'Clima',
+                icon: '❄️',
+                desc: 'Describe el tiempo atmosférico: sol, lluvia, nieve, viento...',
+                allowedDifficulties: ['easy', 'medium', 'hard', 'writing'],
+                theoryNotes: "Para hablar del clima en Japón, utilizamos sustantivos muy gráficos. En invierno verás caer la nieve (雪), y en verano disfrutarás de los días despejados (晴れ).",
+                items: [
+                    { es: 'Sol / Despejado', kanji: '晴れ', furigana: 'はれ', emoji: '☀️', color: 'border-orange-400', bg: 'bg-orange-500/10' },
+                    { es: 'Lluvia / Lluvioso', kanji: '雨', furigana: 'あめ', emoji: '☔', color: 'border-blue-500', bg: 'bg-blue-500/10' },
+                    { es: 'Nublado', kanji: '曇り', furigana: 'くもり', emoji: '☁️', color: 'border-neutral-400', bg: 'bg-neutral-500/10' },
+                    { es: 'Nieve', kanji: '雪', furigana: 'ゆき', emoji: '❄️', color: 'border-cyan-300', bg: 'bg-cyan-500/10' },
+                    { es: 'Viento', kanji: '風', furigana: 'かぜ', emoji: '💨', color: 'border-teal-400', bg: 'bg-teal-500/10' },
+                    { es: 'Caluroso (clima)', kanji: '暑い', furigana: 'あつい', emoji: '🥵', color: 'border-red-500', bg: 'bg-red-500/10' },
+                    { es: 'Frío (clima)', kanji: '寒い', furigana: 'さむい', emoji: '🥶', color: 'border-blue-400', bg: 'bg-blue-500/10' },
+                    { es: 'Buen tiempo', kanji: 'いい天気', furigana: 'いいてんき', emoji: '🌈', color: 'border-emerald-400', bg: 'bg-emerald-500/10' }
+                ]
+            },
+            {
+                id: 'animals',
+                title: 'Animales Comunes',
+                icon: '🐶',
+                desc: 'Aprende nombres de mascotas, de granja y silvestres comunes.',
+                allowedDifficulties: ['easy', 'medium', 'hard', 'writing'],
+                theoryNotes: "Los animales en japonés se escriben tanto con Kanji tradicionales muy descriptivos como de forma directa en Hiragana o Katakana para los más exóticos. ¡Pásatelo bien memorizando a tu compañero favorito!",
+                items: [
+                    { es: 'Perro', kanji: '犬', furigana: 'いぬ', emoji: '🐶', color: 'border-amber-600', bg: 'bg-amber-600/10' },
+                    { es: 'Gato', kanji: '猫', furigana: 'ねこ', emoji: '🐱', color: 'border-amber-400', bg: 'bg-amber-400/10' },
+                    { es: 'Conejo', kanji: 'うさぎ', furigana: 'うさぎ', emoji: '🐰', color: 'border-neutral-200', bg: 'bg-neutral-100/10' },
+                    { es: 'Pájaro', kanji: '鳥', furigana: 'とり', emoji: '🐦', color: 'border-cyan-400', bg: 'bg-cyan-500/10' },
+                    { es: 'Pez', kanji: '魚', furigana: 'さかな', emoji: '🐟', color: 'border-blue-400', bg: 'bg-blue-500/10' },
+                    { es: 'Caballo', kanji: '馬', furigana: 'うま', emoji: '🐴', color: 'border-amber-700', bg: 'bg-amber-700/10' },
+                    { es: 'Oveja', kanji: '羊', furigana: 'ひつじ', emoji: '🐑', color: 'border-zinc-300', bg: 'bg-zinc-500/10' },
+                    { es: 'Vaca', kanji: '牛', furigana: 'うし', emoji: '🐮', color: 'border-neutral-500', bg: 'bg-neutral-500/10' },
+                    { es: 'Oso', kanji: '熊', furigana: 'くま', emoji: '🐻', color: 'border-[#8B4513]', bg: 'bg-[#8B4513]/10' },
+                    { es: 'Mono', kanji: '猿', furigana: 'さる', emoji: '🐵', color: 'border-[#CD853F]', bg: 'bg-[#CD853F]/10' }
+                ]
+            },
+            {
+                id: 'particles',
+                title: 'Partículas Esenciales',
+                icon: '🔑',
+                desc: 'Marcadores gramaticales básicos (は, が, を, に, で, の).',
+                allowedDifficulties: ['medium', 'writing'], // Son partículas cortas en Hiragana, no tienen kanji
+                theoryNotes: "Las partículas japonesas se sitúan detrás de las palabras y definen su rol lógico en la oración. Son el esqueleto gramatical del idioma.",
+                items: [
+                    { 
+                        es: 'Tema principal (ej: Yo soy estudiante)', 
+                        kanji: 'は', 
+                        furigana: 'は', 
+                        emoji: '👑', 
+                        color: 'border-yellow-500', 
+                        bg: 'bg-yellow-500/10',
+                        explicacion: 'Presenta el tema principal de la oración ("en cuanto a..."). Se pronuncia "wa".',
+                        ejemplo: '私は学生です。 (Yo soy estudiante.)'
+                    },
+                    { 
+                        es: 'Sujeto específico (ej: Hay un gato)', 
+                        kanji: 'が', 
+                        furigana: 'が', 
+                        emoji: '🐈', 
+                        color: 'border-red-500', 
+                        bg: 'bg-red-500/10',
+                        explicacion: 'Marca el sujeto específico que realiza la acción, o el sujeto de existencia/deseo.',
+                        ejemplo: '猫がいます。 (Hay un gato.)'
+                    },
+                    { 
+                        es: 'Objeto directo (ej: Bebo té)', 
+                        kanji: 'を', 
+                        furigana: 'を', 
+                        emoji: '🍵', 
+                        color: 'border-blue-500', 
+                        bg: 'bg-blue-500/10',
+                        explicacion: 'Indica la cosa que recibe directamente la acción del verbo. Se pronuncia "o".',
+                        ejemplo: 'お茶を飲みます。 (Bebo té.)'
+                    },
+                    { 
+                        es: 'Destino o Tiempo (ej: Voy a Japón)', 
+                        kanji: 'に', 
+                        furigana: 'に', 
+                        emoji: '✈️', 
+                        color: 'border-emerald-500', 
+                        bg: 'bg-emerald-500/10',
+                        explicacion: 'Señala el destino de un movimiento, un punto específico de la hora o tiempo, o destino pasivo.',
+                        ejemplo: '日本に行きます。 (Voy a Japón.)'
+                    },
+                    { 
+                        es: 'Lugar de acción o medio (ej: Estudio en la biblioteca)', 
+                        kanji: 'で', 
+                        furigana: 'で', 
+                        emoji: '📚', 
+                        color: 'border-purple-500', 
+                        bg: 'bg-purple-500/10',
+                        explicacion: 'Indica el lugar donde ocurre una acción activa o el método/medio utilizado para algo.',
+                        ejemplo: '図書館で勉強します。 (Estudio en la biblioteca.)'
+                    },
+                    { 
+                        es: 'Posesión o Unión (ej: Mi libro / de mí)', 
+                        kanji: 'の', 
+                        furigana: 'の', 
+                        emoji: '💼', 
+                        color: 'border-pink-500', 
+                        bg: 'bg-pink-500/10',
+                        explicacion: 'Une sustantivos para indicar posesión o relación ("de" en español).',
+                        ejemplo: '私の本です。 (Es mi libro.)'
+                    }
+                ]
+            },
+            {
+                id: 'connectors',
+                title: 'Conectores',
+                icon: '⛓️‍💥',
+                desc: 'Y, además, después, pero, aunque...',
+                allowedDifficulties: ['medium', 'writing'], 
+                theoryNotes: "Los conectores lógicos y de secuencia sirven para estructurar oraciones y sonar mucho más fluido y natural. Como no se escriben habitualmente con caracteres Kanji complejos, se aprenden y evalúan directamente en <strong>Hiragana</strong>.",
+                items: [
+                    { 
+                        es: 'Y / Y además', 
+                        kanji: '그리고',
+                        kanji: 'そして', 
+                        furigana: '그리고',
+                        furigana: '그리고', 
+                        furigana: 'そして', 
+                        emoji: '➕', 
+                        color: 'border-yellow-500', 
+                        bg: 'bg-yellow-500/10',
+                        explicacion: 'Conecta dos oraciones independientes de forma sucesiva.',
+                        ejemplo: '日本語を勉強します。そして、本を読みます。 (Estudio japonés. Y además, leo un libro.)'
+                    },
+                    { 
+                        es: 'Encima / Además', 
+                        kanji: 'それに', 
+                        furigana: 'それに', 
+                        emoji: '📈', 
+                        color: 'border-red-500', 
+                        bg: 'bg-red-500/10',
+                        explicacion: 'Acumula razones adicionales, a menudo reforzando una opinión o un hecho.',
+                        ejemplo: 'この家は安いです。それに、きれいです。 (Esta casa es barata. Y encima, es bonita.)'
+                    },
+                    { 
+                        es: 'Después / Luego', 
+                        kanji: 'それから', 
+                        furigana: 'それから', 
+                        emoji: '⏰', 
+                        color: 'border-blue-500', 
+                        bg: 'bg-blue-500/10',
+                        explicacion: 'Indica una secuencia cronológica entre acciones ("luego de eso...").',
+                        ejemplo: '宿題をしました。それから、寝ました。 (Hice los deberes. Después, me dormí.)'
+                    },
+                    { 
+                        es: 'Pero', 
+                        kanji: 'dev',
+                        kanji: 'でも', 
+                        furigana: 'でも', 
+                        emoji: '✋', 
+                        color: 'border-emerald-500', 
+                        bg: 'bg-emerald-500/10',
+                        explicacion: 'Conecta dos ideas contrastantes de forma informal al inicio de la frase.',
+                        ejemplo: '寿司が好き es です。でも、わさびは嫌いです。 (Me gusta el sushi. Pero odio el wasabi.)'
+                    },
+                    { 
+                        es: 'Aunque', 
+                        kanji: 'が', 
+                        furigana: 'が', 
+                        emoji: '⚖️', 
+                        color: 'border-neutral-400', 
+                        bg: 'bg-neutral-900/80',
+                        explicacion: 'Conector que va incrustado al final de la primera frase para contrastar directamente con la siguiente.',
+                        ejemplo: '辛いですが、美味しい es です。 (Es picante, pero es delicioso.)'
+                    },
+                    { 
+                        es: 'Por eso / Por tanto', 
+                        kanji: 'だから', 
+                        furigana: 'だから', 
+                        emoji: '🎯', 
+                        color: 'border-neutral-100', 
+                        bg: 'bg-neutral-100/10',
+                        explicacion: 'Une un hecho o causa previa con su efecto o consecuencia lógica.',
+                        ejemplo: '日曜日です。だから、学校に行きません。 (Es domingo. Por eso, no voy a la escuela.)'
+                    }
+                ]
+            },
+            {
+                id: 'adjectives',
+                title: 'Adjetivos Básicos',
+                icon: '🏷️',
+                desc: 'Aprende adjetivos comunes tipo -i y tipo -na.',
+                allowedDifficulties: ['easy', 'medium', 'hard', 'writing'],
+                theoryNotes: "En japonés existen dos tipos principales de adjetivos: los <strong>adjetivos -i (い)</strong> y los <strong>adjetivos -na (な)</strong>. Los adjetivos -i terminan literalmente en esa vocal, mientras que los -na actúan de forma similar a los sustantivos y necesitan la partícula 'na' para unirse a un nombre. ¡Fíjate también en la diferencia entre frío para el clima (寒い) y frío al tacto (冷たい)!",
+                items: [
+                    { es: 'Frío (sensación)', kanji: '寒い', furigana: 'さむい', emoji: '🥶', color: 'border-cyan-400', bg: 'bg-cyan-500/10' },
+                    { es: 'Frío (tacto)', kanji: '冷たい', furigana: 'つめたい', emoji: '❄️', color: 'border-blue-400', bg: 'bg-blue-500/10' },
+                    { es: 'Calor / Caliente', kanji: '暑い', furigana: 'あつい', emoji: '🥵', color: 'border-red-500', bg: 'bg-red-500/10' },
+                    { es: 'Divertido', kanji: '楽しい', furigana: 'たのしい', emoji: '🎉', color: 'border-emerald-500', bg: 'bg-emerald-500/10' },
+                    { es: 'Aburrido', kanji: 'つまらない', furigana: 'つまらない', emoji: '🥱', color: 'border-neutral-500', bg: 'bg-neutral-500/10' },
+                    { es: 'Interesante', kanji: '面白い', furigana: 'おもしろい', emoji: '💡', color: 'border-indigo-400', bg: 'bg-indigo-500/10' },
+                    { es: 'Tranquilo', kanji: '静か', furigana: 'しずか', emoji: '🤫', color: 'border-teal-500', bg: 'bg-teal-500/10' },
+                    { es: 'Barato', kanji: '安い', furigana: 'やすい', emoji: '🪙', color: 'border-green-500', bg: 'bg-green-500/10' },
+                    { es: 'Caro', kanji: '高い', furigana: 'たかい', emoji: '💎', color: 'border-orange-500', bg: 'bg-orange-500/10' },
+                    { es: 'Bonito', kanji: 'きれい', furigana: 'きれい', emoji: '✨', color: 'border-pink-500', bg: 'bg-pink-500/10' },
+                    { es: 'Gustar', kanji: '好き', furigana: 'すき', emoji: '❤️', color: 'border-rose-500', bg: 'bg-rose-500/10' },
+                    { es: 'Disgustar', kanji: '嫌い', furigana: 'きらい', emoji: '💔', color: 'border-purple-600', bg: 'bg-purple-500/10' }
+                ]
+            }
+        ];
+
+        // LÓGICA DE LA APLICACIÓN
+        const app = {
+            state: {
+                view: 'menu', // 'menu', 'theory', 'exercise'
+                exerciseId: null,
+                difficulty: 'easy',
+                inverted: false, // Modo Invertido (Japonés -> Español)
+                selectedCard: null // Para móvil
+            },
+
+            // --- GESTIÓN DE PROGRESO CON LOCAL STORAGE ---
+            getProgressKey: function(exId, diff, inverted) {
+                return `nihongo_progress_${exId}_${diff}_${inverted ? 'inv' : 'normal'}`;
+            },
+
+            markAsCompleted: function(exId, diff, inverted) {
+                const key = this.getProgressKey(exId, diff, inverted);
+                localStorage.setItem(key, 'true');
+            },
+
+            isCompleted: function(exId, diff, inverted) {
+                return localStorage.getItem(this.getProgressKey(exId, diff, inverted)) === 'true';
+            },
+
+            clearProgress: function() {
+                // Elimina únicamente el progreso de esta app
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('nihongo_progress_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                this.renderMenu();
+            },
+
+            // Navegación de pantallas
+            showView: function(viewName, exerciseId = null) {
+                document.getElementById('view-menu').classList.add('hidden');
+                document.getElementById('view-theory').classList.add('hidden');
+                document.getElementById('view-exercise').classList.add('hidden');
+                document.getElementById('header-actions').classList.add('hidden');
+
+                this.state.view = viewName;
+
+                if (viewName === 'menu') {
+                    document.getElementById('view-menu').classList.remove('hidden');
+                    this.renderMenu();
+                } 
+                else if (viewName === 'theory') {
+                    this.state.exerciseId = exerciseId || this.state.exerciseId;
+                    document.getElementById('header-actions').classList.remove('hidden');
+                    document.getElementById('view-theory').classList.remove('hidden');
+                    this.renderTheory();
+                }
+                else if (viewName === 'exercise') {
+                    document.getElementById('header-actions').classList.remove('hidden');
+                    document.getElementById('view-exercise').classList.remove('hidden');
+                }
+            },
+
+            // 1. Renderizar el menú principal en cuadrícula con badges de logros
+            renderMenu: function() {
+                const grid = document.getElementById('exercises-grid');
+                grid.innerHTML = '';
+
+                EXERCISES_DATA.forEach(ex => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-card border border-gray-800 rounded-2xl p-5 cursor-pointer hover:border-primary transition transform hover:-translate-y-1 shadow-lg flex flex-col justify-between h-[16.5rem]';
+                    card.onclick = () => this.showView('theory', ex.id);
+
+                    // Generar mini medallas de logros para cada dificultad permitida
+                    let achievementsHtml = '<div class="flex gap-1.5 flex-wrap mt-2">';
+                    const diffColors = { easy: '🟢', medium: '🟡', hard: '🔴', writing: '⌨️' };
+                    const diffNames = { easy: 'Fácil', medium: 'Medio', hard: 'Difícil', writing: 'Escribir' };
+
+                    ex.allowedDifficulties.forEach(diff => {
+                        const normalDone = this.isCompleted(ex.id, diff, false);
+                        const invertedDone = this.isCompleted(ex.id, diff, true);
+                        
+                        let badgeClass = 'bg-darker/60 border border-gray-800 text-gray-500';
+                        let checkSymbol = '';
+                        
+                        if (normalDone && invertedDone) {
+                            // Completado en ambos sentidos -> Medalla de Oro brillante
+                            badgeClass = 'bg-yellow-500/10 border-yellow-500/80 text-yellow-400 font-extrabold shadow-[0_0_8px_rgba(234,179,8,0.2)]';
+                            checkSymbol = '⭐';
+                        } else if (normalDone || invertedDone) {
+                            // Completado en un sentido -> Medalla plata/bronce
+                            badgeClass = 'bg-primary/10 border-primary/50 text-indigo-300 font-semibold';
+                            checkSymbol = '✓';
+                        }
+
+                        achievementsHtml += `
+                            <span class="text-[10px] px-2 py-0.5 rounded-full border flex items-center gap-1 ${badgeClass}" title="${diffNames[diff]}: ${normalDone ? 'Normal ✓' : 'Normal ✗'} | ${invertedDone ? 'Invertido ✓' : 'Invertido ✗'}">
+                                <span>${diffColors[diff]}</span>
+                                <span>${checkSymbol}</span>
+                            </span>
+                        `;
+                    });
+                    achievementsHtml += '</div>';
+
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="text-4xl group-hover:scale-110 transition-transform origin-left">${ex.icon}</div>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-100">${ex.title}</h3>
+                            <p class="text-xs text-gray-400 mt-1 line-clamp-2">${ex.desc}</p>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Medallas:</div>
+                            ${achievementsHtml}
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            },
+
+            // 2. Renderizar Pantalla de Teoría (Estudio) - Cabeceras y filas dinámicas
+            renderTheory: function() {
+                const ex = EXERCISES_DATA.find(e => e.id === this.state.exerciseId);
+                if (!ex) return;
+
+                document.getElementById('theory-icon').textContent = ex.icon;
+                document.getElementById('theory-title').textContent = ex.title;
+                
+                const explanationsContainer = document.getElementById('theory-explanations');
+                const thead = document.querySelector('#view-theory table thead');
+                const tbody = document.getElementById('theory-table-body');
+                
+                const hasExtraDetails = ex.items.some(item => item.explicacion || item.ejemplo);
+
+                if (hasExtraDetails) {
+                    explanationsContainer.classList.remove('hidden');
+                    explanationsContainer.innerHTML = '<h3 class="text-lg font-bold text-gray-200 mb-3 border-b border-gray-800 pb-2">Explicaciones y Ejemplos de uso:</h3>';
+                    
+                    ex.items.forEach(item => {
+                        const block = document.createElement('div');
+                        block.className = 'bg-darker p-4 rounded-xl border border-gray-800 space-y-2';
+                        block.innerHTML = `
+                            <div class="flex items-center justify-between">
+                                <span class="text-lg font-bold text-primary font-jp">${item.kanji} <span class="text-sm text-gray-400 font-sans font-medium">(${item.es})</span></span>
+                                ${item.emoji ? `<span class="text-lg">${item.emoji}</span>` : ''}
+                            </div>
+                            <p class="text-gray-300 text-sm leading-relaxed">${item.explicacion || ''}</p>
+                            <div class="bg-card/50 p-3 rounded-lg border border-gray-800/80">
+                                <span class="text-[10px] uppercase tracking-wider font-bold text-gray-500 block mb-1">Ejemplo real:</span>
+                                <p class="text-xs text-gray-300 font-jp leading-relaxed italic">${item.ejemplo || ''}</p>
+                            </div>
+                        `;
+                        explanationsContainer.appendChild(block);
+                    });
+
+                    // Tabla resumen minimalista
+                    thead.innerHTML = `
+                        <tr class="bg-gray-800/80 text-gray-300 text-xs uppercase tracking-wider">
+                            <th class="p-3">Japonés</th>
+                            <th class="p-3">Significado</th>
+                            <th class="p-3 text-center">Pista / Icono</th>
+                        </tr>
+                    `;
+                    tbody.innerHTML = '';
+                    ex.items.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.className = 'hover:bg-gray-800/30 transition-colors border-b border-gray-800/50';
+                        row.innerHTML = `
+                            <td class="p-3 font-jp text-lg text-primary font-bold">${item.kanji}</td>
+                            <td class="p-3 font-semibold text-gray-200">${item.es}</td>
+                            <td class="p-3 text-center text-lg">${item.emoji || '—'}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    explanationsContainer.classList.add('hidden');
+                    explanationsContainer.innerHTML = '';
+
+                    // Diseño estándar para vocabulario (Días, Direcciones, Colores, Adjetivos, Contadores)
+                    thead.innerHTML = `
+                        <tr class="bg-gray-800/80 text-gray-300 text-xs uppercase tracking-wider">
+                            <th class="p-3">Español</th>
+                            <th class="p-3">Japonés</th>
+                            <th class="p-3">Lectura (Hiragana)</th>
+                            <th class="p-3 text-center">Pista / Emoji</th>
+                        </tr>
+                    `;
+                    tbody.innerHTML = '';
+                    ex.items.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.className = 'hover:bg-gray-800/30 transition-colors border-b border-gray-800/50';
+                        row.innerHTML = `
+                            <td class="p-3 font-semibold text-gray-300">${item.es}</td>
+                            <td class="p-3 font-jp text-lg text-white font-medium">${item.kanji}</td>
+                            <td class="p-3 font-jp text-lg text-white font-medium">${item.furigana}</td>
+                            <td class="p-3 text-center text-lg">${item.emoji || '—'}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+
+                const notesBox = document.getElementById('theory-notes-box');
+                if (ex.theoryNotes) {
+                    notesBox.classList.remove('hidden');
+                    notesBox.innerHTML = `
+                        <div class="flex gap-2 items-start">
+                            <span class="text-lg">💡</span>
+                            <div>
+                                <h4 class="font-bold text-gray-200 mb-1">Nota de estudio:</h4>
+                                <p class="text-gray-300">${ex.theoryNotes}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    notesBox.classList.add('hidden');
+                }
+
+                const btnStart = document.getElementById('btn-start-practice');
+                const defaultDifficulty = ex.allowedDifficulties[0] || 'medium';
+                btnStart.onclick = () => this.startExercise(defaultDifficulty);
+            },
+
+            // 3. Iniciar el Ejercicio interactivo
+            startExercise: function(difficulty) {
+                this.state.difficulty = difficulty;
+                this.state.selectedCard = null;
+                const ex = EXERCISES_DATA.find(e => e.id === this.state.exerciseId);
+                
+                document.getElementById('ex-title').textContent = ex.title;
+                
+                // Actualizar interfaz del switch de dirección
+                this.updateInvertedModeUI();
+
+                const feedback = document.getElementById('feedback-message');
+                feedback.classList.add('hidden');
+                document.getElementById('btn-check').classList.remove('hidden');
+
+                // Mostrar u ocultar contenedor de tarjetas según el modo
+                const cardsWrapper = document.getElementById('cards-container-wrapper');
+                if (difficulty === 'writing') {
+                    cardsWrapper.classList.add('hidden');
+                } else {
+                    cardsWrapper.classList.remove('hidden');
+                }
+
+                // Generar pestañas de dificultad
+                this.renderDifficultyTabs(ex);
+
+                // Renderizar slots (Destinos)
+                this.renderSlots(ex.items, difficulty);
+
+                // Renderizar tarjetas (Origen)
+                if (difficulty !== 'writing') {
+                    this.renderCards(ex.items, difficulty);
+                }
+
+                this.showView('exercise');
+            },
+
+            // Alternar modo invertido (Español <-> Japonés)
+            toggleInverted: function(isInverted) {
+                this.state.inverted = isInverted;
+                this.startExercise(this.state.difficulty);
+            },
+
+            updateInvertedModeUI: function() {
+                const btnNormal = document.getElementById('btn-mode-normal');
+                const btnInverted = document.getElementById('btn-mode-inverted');
+                
+                if (this.state.inverted) {
+                    btnNormal.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap text-gray-400 hover:text-white';
+                    btnInverted.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap bg-indigo-600 text-white shadow-md';
+                } else {
+                    btnNormal.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap bg-indigo-600 text-white shadow-md';
+                    btnInverted.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap text-gray-400 hover:text-white';
+                }
+            },
+
+            resetExercise: function() {
+                this.startExercise(this.state.difficulty);
+            },
+
+            renderDifficultyTabs: function(ex) {
+                const container = document.getElementById('difficulty-tabs-container');
+                container.innerHTML = '';
+
+                const meta = {
+                    easy: { name: '🟢 Fácil', desc: 'Ayuda visual completa' },
+                    medium: { name: '🟡 Medio', desc: 'Con lectura, sin pistas' },
+                    hard: { name: '🔴 Difícil', desc: 'Solo caracteres directos' },
+                    writing: { name: '⌨️ Escribir', desc: 'Escritura manual' }
+                };
+
+                ex.allowedDifficulties.forEach(diff => {
+                    const btn = document.createElement('button');
+                    const isActive = diff === this.state.difficulty;
+                    btn.className = `px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                        isActive 
+                            ? 'bg-primary text-white shadow-md' 
+                            : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`;
+                    btn.textContent = meta[diff].name;
+                    btn.title = meta[diff].desc;
+                    btn.onclick = () => this.startExercise(diff);
+                    container.appendChild(btn);
+                });
+            },
+
+            shuffle: function(array) {
+                let currentIndex = array.length, randomIndex;
+                while (currentIndex !== 0) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+                    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+                }
+                return array;
+            },
+
+            // Helper para obtener el texto del slot de forma dinámica según el modo e idioma
+            getSlotLabelHtml: function(item, difficulty) {
+                if (!this.state.inverted) {
+                    // Modo Normal: El slot te muestra el concepto en Español
+                    return item.es;
+                } else {
+                    // Modo Invertido: El slot te muestra el concepto en Japonés
+                    if (difficulty === 'easy') {
+                        let inner = item.furigana ? `<ruby>${item.kanji}<rt>${item.furigana}</rt></ruby>` : item.kanji;
+                        if (item.emoji) inner += ` <span class="text-base ml-1">${item.emoji}</span>`;
+                        return inner;
+                    } else if (difficulty === 'medium') {
+                        return item.furigana ? `<ruby>${item.kanji}<rt>${item.furigana}</rt></ruby>` : item.kanji;
+                    } else {
+                        return item.kanji;
+                    }
+                }
+            },
+
+            // Renderizar huecos de destino
+            renderSlots: function(items, difficulty) {
+                const container = document.getElementById('slots-container');
+                container.innerHTML = '';
+
+                items.forEach((item, index) => {
+                    const slotWrap = document.createElement('div');
+                    slotWrap.className = 'flex flex-col bg-darker rounded-xl border border-gray-800 overflow-hidden';
+                    
+                    // Etiqueta del slot (Español o Japonés según modo de dirección)
+                    const label = document.createElement('div');
+                    label.className = 'bg-gray-800/50 text-center py-2 px-3 text-sm font-bold text-gray-300 border-b border-gray-800 font-jp min-h-[2.5rem] flex items-center justify-center';
+                    label.innerHTML = this.getSlotLabelHtml(item, difficulty);
+                    slotWrap.appendChild(label);
+
+                    // Hueco interactivo
+                    const slot = document.createElement('div');
+                    
+                    // Asignar respuestas esperadas dependiendo de la dirección
+                    if (!this.state.inverted) {
+                        slot.dataset.expected = item.kanji; 
+                        slot.dataset.altExpected = item.furigana; 
+                    } else {
+                        slot.dataset.expected = item.es;
+                        slot.dataset.altExpected = ''; 
+                    }
+                    
+                    if (difficulty === 'writing') {
+                        slot.className = 'p-3 flex-grow flex items-center justify-center';
+                        slot.innerHTML = `<input type="text" placeholder="${this.state.inverted ? 'Escribe en español...' : 'Escribe en japonés...'}" class="jp-input w-full bg-transparent border-b-2 border-gray-700 focus:border-primary outline-none text-white p-2 transition-colors">`;
+                    } else {
+                        slot.className = 'drop-zone flex-grow min-h-[4rem] p-2 flex items-center justify-center relative cursor-pointer';
+                        slot.dataset.slotId = index;
+                        
+                        // Drag & Drop PC
+                        slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drag-over'); });
+                        slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+                        slot.addEventListener('drop', e => this.handleDrop(e, slot));
+                        
+                        // Tap-to-move Móvil
+                        slot.addEventListener('click', () => this.handleSlotClick(slot));
+                    }
+                    
+                    slotWrap.appendChild(slot);
+                    container.appendChild(slotWrap);
+                });
+            },
+
+            // Renderizar las tarjetas de origen
+            renderCards: function(items, difficulty) {
+                const container = document.getElementById('cards-container');
+                container.innerHTML = '';
+                
+                const shuffledItems = this.shuffle([...items]);
+
+                shuffledItems.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'card-draggable font-jp bg-gray-800 border-2 border-gray-700 rounded-xl px-4 py-2.5 cursor-pointer shadow flex items-center justify-center gap-2 select-none min-w-[5.5rem] text-center';
+                    
+                    // Solo el Modo Fácil normal tiene colores de pista representativos
+                    if (difficulty === 'easy' && !this.state.inverted) {
+                        card.classList.add(item.color, item.bg);
+                    }
+
+                    // Construcción del contenido interno según la dirección del juego
+                    let cardValue = '';
+                    let content = '';
+
+                    if (!this.state.inverted) {
+                        // Modo Normal: Arrastramos Tarjetas en Japonés
+                        cardValue = item.kanji;
+                        content += `<span class="text-base font-bold">`;
+                        if (difficulty === 'easy' || difficulty === 'medium') {
+                            if (item.furigana && item.furigana !== item.kanji) {
+                                content += `<ruby>${item.kanji}<rt>${item.furigana}</rt></ruby>`;
+                            } else {
+                                content += item.kanji;
+                            }
+                        } else {
+                            content += item.kanji;
+                        }
+                        content += `</span>`;
+                        
+                        if (difficulty === 'easy' && item.emoji) {
+                            content += `<span class="text-lg ml-1">${item.emoji}</span>`;
+                        }
+                    } else {
+                        // Modo Invertido: Arrastramos Tarjetas en Español
+                        cardValue = item.es;
+                        content += `<span class="text-sm font-semibold font-sans">${item.es}</span>`;
+                    }
+
+                    card.innerHTML = content;
+                    card.dataset.value = cardValue;
+                    
+                    // Drag PC
+                    card.draggable = true;
+                    card.addEventListener('dragstart', e => {
+                        e.dataTransfer.setData('text/plain', cardValue);
+                        card.classList.add('dragging');
+                        this.state.selectedCard = card;
+                    });
+                    card.addEventListener('dragend', () => {
+                        card.classList.remove('dragging');
+                        this.clearSelection();
+                    });
+
+                    // Click/Touch móvil
+                    card.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.handleCardClick(card);
+                    });
+
+                    container.appendChild(card);
+                });
+            },
+
+            // --- LÓGICA DE MOVIMIENTO DE TARJETAS ---
+
+            returnCardToPool: function(card) {
+                card.style.width = '';
+                card.style.height = '';
+                
+                // Restablecer estilos bases limpios de veredicto
+                if (!this.state.inverted) {
+                    card.className = 'card-draggable font-jp bg-gray-800 border-2 border-gray-700 rounded-xl px-4 py-2.5 cursor-pointer shadow flex items-center justify-center gap-2 select-none min-w-[5.5rem] text-center';
+                    if (this.state.difficulty === 'easy') {
+                        const ex = EXERCISES_DATA.find(e => e.id === this.state.exerciseId);
+                        const item = ex.items.find(i => i.kanji === card.dataset.value);
+                        if (item) card.classList.add(item.color, item.bg);
+                    }
+                } else {
+                    card.className = 'card-draggable font-sans bg-gray-800 border-2 border-gray-700 rounded-xl px-4 py-2.5 cursor-pointer shadow flex items-center justify-center gap-2 select-none min-w-[5.5rem] text-center';
+                }
+                
+                document.getElementById('cards-container').appendChild(card);
+            },
+
+            handleCardClick: function(cardElement) {
+                if (cardElement.parentElement.classList.contains('drop-zone')) {
+                    this.returnCardToPool(cardElement);
+                    this.clearSelection();
+                    return;
+                }
+                this.clearSelection();
+                this.state.selectedCard = cardElement;
+                cardElement.classList.add('selected');
+            },
+
+            handleSlotClick: function(slotElement) {
+                if (this.state.selectedCard) {
+                    this.placeCardInSlot(this.state.selectedCard, slotElement);
+                    this.clearSelection();
+                } else if (slotElement.children.length > 0) {
+                    this.returnCardToPool(slotElement.children[0]);
+                }
+            },
+
+            handleDrop: function(e, slotElement) {
+                e.preventDefault();
+                slotElement.classList.remove('drag-over');
+                
+                const draggedValue = e.dataTransfer.getData('text/plain');
+                // Buscar tanto por kanji como por traducción
+                const card = document.querySelector(`.card-draggable[data-value="${draggedValue}"]`);
+                
+                if (card) {
+                    this.placeCardInSlot(card, slotElement);
+                }
+                this.clearSelection();
+            },
+
+            placeCardInSlot: function(card, slot) {
+                if (slot.children.length > 0) {
+                    this.returnCardToPool(slot.children[0]);
+                }
+                card.classList.remove('selected', 'dragging');
+                card.style.width = '100%';
+                card.style.height = '100%';
+                slot.appendChild(card);
+            },
+
+            clearSelection: function() {
+                if (this.state.selectedCard) {
+                    this.state.selectedCard.classList.remove('selected');
+                }
+                this.state.selectedCard = null;
+            },
+
+            // Normalización para comprobaciones de texto seguras (especialmente en Español)
+            normalizeSpanishText: function(str) {
+                return str.toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "") // Eliminar acentos
+                    .replace(/[^\w\s/]/g, "") // Eliminar símbolos de puntuación salvo barras de alternativas
+                    .replace(/\s+/g, " ") // Colapsar espacios extra
+                    .trim();
+            },
+
+            // --- COMPROBACIÓN Y CALIFICACIÓN ---
+            checkAnswers: function() {
+                const slots = document.querySelectorAll('.drop-zone, .jp-input');
+                let allCorrect = true;
+                let answered = 0;
+                const total = slots.length;
+
+                slots.forEach(slot => {
+                    const isWriting = this.state.difficulty === 'writing';
+                    const parentSlot = isWriting ? slot.parentElement : slot;
+                    const expected = parentSlot.dataset.expected;
+                    const altExpected = parentSlot.dataset.altExpected;
+
+                    let isSlotCorrect = false;
+
+                    if (isWriting) {
+                        const userInput = slot.value.trim();
+                        if (userInput !== '') {
+                            answered++;
+                            if (!this.state.inverted) {
+                                // Modo Normal: Escribe en Japonés (Kanji o Kana)
+                                if (userInput.toLowerCase() === expected.toLowerCase() || 
+                                   (altExpected && userInput.toLowerCase() === altExpected.toLowerCase())) {
+                                    isSlotCorrect = true;
+                                }
+                            } else {
+                                // Modo Invertido: Escribe en Español
+                                const normUser = this.normalizeSpanishText(userInput);
+                                const normExpected = this.normalizeSpanishText(expected);
+                                
+                                // Permitir coincidencia si contiene barra lateral alternativa (ej: "Y / Y además")
+                                if (normUser === normExpected) {
+                                    isSlotCorrect = true;
+                                } else {
+                                    // Comprobar por sub-conceptos de forma amigable para evitar frustraciones al usuario
+                                    const subAlternatives = normExpected.split("/");
+                                    const matchesAlternative = subAlternatives.some(alt => normUser === alt.trim());
+                                    
+                                    if (matchesAlternative || normExpected.includes(normUser) && normUser.length >= 3) {
+                                        isSlotCorrect = true;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Modo Drag & Drop
+                        if (slot.children.length > 0) {
+                            answered++;
+                            const cardValue = slot.children[0].dataset.value;
+                            if (cardValue === expected) {
+                                isSlotCorrect = true;
+                            }
+                        }
+                    }
+
+                    // Dar feedback visual
+                    if (isWriting && slot.value.trim() !== '') {
+                        slot.classList.remove('text-white', 'text-green-400', 'text-red-400', 'border-gray-700', 'border-green-500', 'border-red-500');
+                        if (isSlotCorrect) {
+                            slot.classList.add('text-green-400', 'border-green-500');
+                        } else {
+                            slot.classList.add('text-red-400', 'border-red-500');
+                            allCorrect = false;
+                        }
+                    } else if (!isWriting && slot.children.length > 0) {
+                        const card = slot.children[0];
+                        card.className = 'card-draggable rounded-xl px-4 py-2.5 cursor-pointer shadow flex items-center justify-center gap-2 select-none min-w-[5.5rem] text-center border-2';
+                        
+                        if (this.state.inverted) {
+                            card.classList.add('font-sans');
+                        } else {
+                            card.classList.add('font-jp');
+                        }
+
+                        if (isSlotCorrect) {
+                            card.classList.add('border-green-500', 'bg-green-900/30');
+                        } else {
+                            card.classList.add('border-red-500', 'bg-red-900/30');
+                            allCorrect = false;
+                        }
+                    } else {
+                        allCorrect = false;
+                    }
+                });
+
+                // Caja de feedback inferior
+                const feedback = document.getElementById('feedback-message');
+                feedback.classList.remove('hidden', 'bg-green-900/40', 'text-green-400', 'bg-red-900/40', 'text-red-400', 'bg-yellow-900/40', 'text-yellow-400');
+                
+                if (answered < total) {
+                    feedback.textContent = `Faltan ${total - answered} respuestas por completar. ¡Tú puedes!`;
+                    feedback.classList.add('bg-yellow-900/40', 'text-yellow-400');
+                } else if (allCorrect) {
+                    feedback.textContent = '¡Felicidades! Lo has resuelto todo perfecto. 🎉';
+                    feedback.classList.add('bg-green-900/40', 'text-green-400');
+                    document.getElementById('btn-check').classList.add('hidden');
+
+                    // Guardar progreso de esta dificultad y dirección actual
+                    this.markAsCompleted(this.state.exerciseId, this.state.difficulty, this.state.inverted);
+                } else {
+                    feedback.textContent = 'Hay algunos errores. Revisa las tarjetas de color rojo.';
+                    feedback.classList.add('bg-red-900/40', 'text-red-400');
+                }
+            }
+        };
+
+        // Iniciar en el menú principal al cargar la ventana
+        window.onload = () => {
+            app.showView('menu');
+        };
+    </script>
+</body>
+</html>
